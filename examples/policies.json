@@ -1,0 +1,102 @@
+{
+  "policies": [
+    {
+      "id": "employee-read-own-profile",
+      "description": "Employees may read their own profile.",
+      "effect": "allow",
+      "actions": ["profile.read"],
+      "resource_types": ["profile"],
+      "condition": {
+        "left": "subject.id",
+        "op": "==",
+        "right": {"attr": "resource.owner_id"}
+      }
+    },
+    {
+      "id": "manager-approve",
+      "description": "Managers may approve invoices in their departments up to 10,000.",
+      "effect": "allow",
+      "actions": ["invoice.approve"],
+      "resource_types": ["invoice"],
+      "condition": {
+        "all": [
+          {"left": "subject.roles", "op": "contains", "right": "manager"},
+          {
+            "left": "resource.department",
+            "op": "in",
+            "right": {"attr": "subject.departments"}
+          },
+          {"left": "resource.amount", "op": "<=", "right": 10000}
+        ]
+      }
+    },
+    {
+      "id": "controller-approve-high",
+      "description": "Controllers may approve higher-value invoices in their departments.",
+      "effect": "allow",
+      "actions": ["invoice.approve"],
+      "resource_types": ["invoice"],
+      "condition": {
+        "all": [
+          {"left": "subject.roles", "op": "contains", "right": "controller"},
+          {
+            "left": "resource.department",
+            "op": "in",
+            "right": {"attr": "subject.departments"}
+          },
+          {"left": "resource.amount", "op": "<=", "right": 100000}
+        ]
+      }
+    },
+    {
+      "id": "deny-cross-department",
+      "description": "Invoices may only be handled by members of the owning department.",
+      "effect": "deny",
+      "actions": ["invoice.*"],
+      "resource_types": ["invoice"],
+      "condition": {
+        "not": {
+          "left": "resource.department",
+          "op": "in",
+          "right": {"attr": "subject.departments"}
+        }
+      }
+    },
+    {
+      "id": "deny-archived",
+      "description": "Archived or void invoices cannot be changed.",
+      "effect": "deny",
+      "actions": ["invoice.*"],
+      "resource_types": ["invoice"],
+      "condition": {
+        "left": "resource.status",
+        "op": "in",
+        "right": ["archived", "void"]
+      }
+    },
+    {
+      "id": "admin-all",
+      "description": "Administrators may perform any action.",
+      "effect": "allow",
+      "actions": ["*"],
+      "resource_types": ["*"],
+      "condition": {
+        "left": "subject.roles",
+        "op": "contains",
+        "right": "admin"
+      }
+    },
+    {
+      "id": "tenant-document-read",
+      "description": "Documents are isolated to the subject's tenant.",
+      "effect": "allow",
+      "actions": ["document.read"],
+      "resource_types": ["document"],
+      "condition": {
+        "left": "subject.tenant",
+        "op": "==",
+        "right": {"attr": "resource.tenant"}
+      }
+    }
+  ]
+}
